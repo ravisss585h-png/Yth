@@ -1,0 +1,68 @@
+name: Build Android APK (GPS Map Camera)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Node.js (Capacitor 4 stable)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16
+
+      # 3️⃣ Java (Gradle compatible)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+
+      # 4️⃣ Install npm deps
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install -g @capacitor/cli@4
+
+      # 5️⃣ Clean android
+      - name: Clean android
+        run: rm -rf android
+
+      # 6️⃣ Add Android platform (FIXED)
+      - name: Add Android
+        run: npx @capacitor/cli@4 cap add android
+
+      # 7️⃣ Inject permissions
+      - name: Add Android permissions
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a\
+          \    <uses-permission android:name="android.permission.INTERNET" />\
+          \    <uses-permission android:name="android.permission.CAMERA" />\
+          \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\
+          \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />' $MANIFEST
+
+      # 8️⃣ Capacitor sync
+      - name: Capacitor sync
+        run: npx @capacitor/cli@4 cap sync android
+
+      # 9️⃣ Build APK
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 🔟 Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Map-Camera-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
