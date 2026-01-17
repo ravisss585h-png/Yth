@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>GPS Map Camera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    button {
+      font-size: 18px;
+      padding: 15px 30px;
+      border-radius: 10px;
+      border: none;
+      background: #1e88e5;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>📸 GPS Map Camera</h2>
+  <p id="status">Status: Ready</p>
+
+  <button onclick="startCapture()">Capture Photo</button>
+
+  <script>
+    async function startCapture() {
+      try {
+        if (!window.Capacitor || !Capacitor.isNativePlatform()) {
+          alert("This feature works only on Android app");
+          return;
+        }
+
+        const { Camera } = Capacitor.Plugins;
+        const { Geolocation } = Capacitor.Plugins;
+
+        // 1️⃣ CAMERA PERMISSION
+        const camPerm = await Camera.requestPermissions();
+        if (camPerm.camera !== 'granted') {
+          alert("Camera permission denied");
+          return;
+        }
+
+        // 2️⃣ OPEN CAMERA
+        const photo = await Camera.getPhoto({
+          quality: 90,
+          source: CameraSource.Camera,
+          resultType: CameraResultType.Uri,
+          saveToGallery: true
+        });
+
+        // 3️⃣ LOCATION (AFTER PHOTO)
+        const locPerm = await Geolocation.requestPermissions();
+        if (locPerm.location !== 'granted') {
+          alert("Location permission denied");
+          return;
+        }
+
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true
+        });
+
+        alert(
+          "Photo captured successfully\n\n" +
+          "Latitude: " + position.coords.latitude + "\n" +
+          "Longitude: " + position.coords.longitude
+        );
+
+      } catch (e) {
+        console.error(e);
+        alert("Camera failed. Please reopen app.");
+      }
+    }
+  </script>
+</body>
+</html>
