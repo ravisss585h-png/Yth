@@ -1,0 +1,79 @@
+name: Build Android APK (GPS Map Camera)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Node (Capacitor 4 stable)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 16
+
+      # 3️⃣ Java (Android compatible)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+
+      # 4️⃣ Install Node deps + Capacitor CLI
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install @capacitor/cli@4 --save-dev
+
+      # 5️⃣ Setup Android SDK + ACCEPT LICENSES ✅ (MAIN FIX)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install required SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
+      # 6️⃣ Clean android
+      - name: Clean android
+        run: rm -rf android
+
+      # 7️⃣ Add Android platform
+      - name: Add Android
+        run: npx cap add android
+
+      # 8️⃣ Inject permissions
+      - name: Add Android permissions
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a\
+          \    <uses-permission android:name="android.permission.INTERNET" />\
+          \    <uses-permission android:name="android.permission.CAMERA" />\
+          \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\
+          \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />' $MANIFEST
+
+      # 9️⃣ Capacitor sync
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      # 🔟 Build APK
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 1️⃣1️⃣ Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Map-Camera-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
