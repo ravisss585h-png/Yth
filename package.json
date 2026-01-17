@@ -1,0 +1,11 @@
+{
+  "name": "gps-map-camera",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "4.8.0",
+    "@capacitor/core": "4.8.0",
+    "@capacitor/camera": "4.1.4",
+    "@capacitor/geolocation": "4.1.0"
+  }
+}
