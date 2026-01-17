@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.gpsmapcamera",
+  "appName": "GPS Map Camera",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
