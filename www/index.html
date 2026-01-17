@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GPS Map Camera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    let busy = false;
+
+    async function capturePhoto() {
+      if (busy) return;   // 🔒 block double trigger
+      busy = true;
+      document.getElementById("btn").disabled = true;
+
+      try {
+        if (!window.Capacitor || !Capacitor.Plugins) {
+          alert("App not ready");
+          return;
+        }
+
+        const Camera = Capacitor.Plugins.Camera;
+        const Geolocation = Capacitor.Plugins.Geolocation;
+
+        /* -------- LOCATION -------- */
+        let lat = "N/A";
+        let lng = "N/A";
+
+        try {
+          const locPerm = await Geolocation.requestPermissions();
+          if (locPerm.location === "granted") {
+            const pos = await Geolocation.getCurrentPosition({
+              enableHighAccuracy: true,
+              timeout: 20000
+            });
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+          }
+        } catch (e) {
+          console.log("GPS skipped");
+        }
+
+        /* -------- CAMERA -------- */
+        const camPerm = await Camera.requestPermissions();
+        if (camPerm.camera !== "granted" && camPerm.photos !== "granted") {
+          alert("Camera permission denied");
+          return;
+        }
+
+        const photo = await Camera.getPhoto({
+          quality: 90,
+          source: "CAMERA",
+          resultType: "URI",
+          saveToGallery: true
+        });
+
+        alert(
+          "📸 Photo Saved\n\n" +
+          "Latitude: " + lat + "\n" +
+          "Longitude: " + lng
+        );
+
+      } catch (err) {
+        console.error(err);
+        alert("Unexpected error");
+      } finally {
+        busy = false;
+        document.getElementById("btn").disabled = false;
+      }
+    }
+  </script>
+</head>
+
+<body style="background:black;color:white;text-align:center;">
+  <h2 style="margin-top:40px;">📸 GPS Map Camera</h2>
+  <p>Status: Ready</p>
+
+  <button
+    id="btn"
+    onclick="capturePhoto()"
+    style="
+      margin-top:30px;
+      padding:15px 30px;
+      font-size:18px;
+      border:none;
+      border-radius:8px;
+      background:#1e90ff;
+      color:white;
+    ">
+    Capture Photo
+  </button>
+</body>
+</html>
