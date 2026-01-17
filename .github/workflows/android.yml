@@ -1,0 +1,74 @@
+name: Build Android APK (Full Permissions)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3️⃣ Setup Java (Gradle)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 4️⃣ Install npm dependencies
+      - name: Install npm packages
+        run: npm install
+
+      # 5️⃣ Remove any existing android folder (clean build)
+      - name: Remove android folder
+        run: rm -rf android
+
+      # 6️⃣ Generate fresh Android project
+      - name: Add Android platform
+        run: npx cap add android
+
+      # 7️⃣ 🔥 FORCE ADD ALL PERMISSIONS INTO AndroidManifest.xml
+      - name: Inject permissions into AndroidManifest
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+
+          # Safety check
+          if [ ! -f "$MANIFEST" ]; then
+            echo "AndroidManifest.xml not found!"
+            exit 1
+          fi
+
+          # Insert permissions right after <manifest ...> line
+          sed -i '/<manifest/a\
+          \    <uses-permission android:name="android.permission.INTERNET" />\
+          \    <uses-permission android:name="android.permission.CAMERA" />\
+          \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
+          \    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\
+          \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />' "$MANIFEST"
+
+      # 8️⃣ Sync Capacitor plugins
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      # 9️⃣ Build debug APK
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 🔟 Upload APK as artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GPS-Map-Camera-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
