@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GPS Map Camera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script>
+    const { Camera, Geolocation } = Capacitor.Plugins;
+    const { CameraSource, CameraResultType } = Capacitor;
+
+    async function capturePhoto() {
+      try {
+        /* ======================
+           LOCATION PERMISSION
+        ====================== */
+        const locPerm = await Geolocation.requestPermissions();
+        if (locPerm.location !== "granted") {
+          alert("Location permission denied");
+          return;
+        }
+
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000
+        });
+
+        /* ======================
+           CAMERA PERMISSION (FIXED)
+        ====================== */
+        const camPerm = await Camera.requestPermissions();
+
+        // ✅ ANDROID 13+ SAFE CHECK
+        if (camPerm.camera !== "granted" && camPerm.photos !== "granted") {
+          alert("Camera permission denied");
+          return;
+        }
+
+        /* ======================
+           CAPTURE PHOTO
+        ====================== */
+        const photo = await Camera.getPhoto({
+          quality: 90,
+          source: CameraSource.Camera,
+          resultType: CameraResultType.Uri,
+          saveToGallery: true
+        });
+
+        alert(
+          "📸 Photo Saved Successfully\n\n" +
+          "Latitude: " + position.coords.latitude + "\n" +
+          "Longitude: " + position.coords.longitude
+        );
+
+        console.log("Photo URI:", photo.webPath);
+
+      } catch (err) {
+        console.error(err);
+        alert("Camera or GPS error");
+      }
+    }
+  </script>
+</head>
+
+<body style="background:black;color:white;text-align:center;">
+  <h2 style="margin-top:40px;">📸 GPS Map Camera</h2>
+  <p>Status: Ready</p>
+
+  <button
+    onclick="capturePhoto()"
+    style="
+      margin-top:30px;
+      padding:15px 30px;
+      font-size:18px;
+      border:none;
+      border-radius:8px;
+      background:#1e90ff;
+      color:white;
+    ">
+    Capture Photo
+  </button>
+</body>
+</html>
